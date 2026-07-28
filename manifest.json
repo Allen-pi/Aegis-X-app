@@ -1,0 +1,21 @@
+{
+  "name": "Aegis-X 智能战衣",
+  "short_name": "Aegis-X",
+  "description": "Aegis-X 智能温控战衣控制终端",
+  "start_url": "/Aegis-X-app/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/Allen-pi/Aegis-X-app/main/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/Allen-pi/Aegis-X-app/main/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
