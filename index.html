@@ -1,44 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-// ==================== 1. 系统版本与 OTA 配置 (v3.7.0 优化版) ====================
-const String CURRENT_VERSION = "3.7.0";
-const char* OTA_CHECK_URL = "https://raw.githubusercontent.com/Allen-pi/Aegis-X-ota/refs/heads/main/version.json";
-const char* OTA_BIN_URL   = "https://github.com/Allen-pi/Aegis-X-ota/releases/download/v3.7.0/sketch_jul24b.ino.bin";
-
-WebServer server(80);
-DNSServer dnsServer; 
-Preferences preferences;
-const byte DNS_PORT = 53;
-
-// ==================== 2. Aegis-X 核心状态变量 ====================
-float targetTemp      = 18.0; 
-float garmentTemp     = 24.5; 
-float garmentHumidity = 55.0; 
-float ambientTemp     = 31.2; 
-float ambientHumidity = 68.0; 
-int batteryLevel      = 85;   
-int coolingLevel      = 3;    // 0~5 档
-int pumpSpeed         = 70;   // 0~100%
-int fanSpeed          = 60;   // 0~100%
-
-bool systemRunning    = false; 
-int workMode          = 0;     // 0:制冷, 1:制热, 2:除湿, 3:智能
-
-int lastWorkMode      = 0;
-int lastCoolingLevel  = 3;    
-int lastPumpSpeed     = 70;
-int lastFanSpeed      = 60;
-
-int tecStatus         = 0;     
-int pumpStatus        = 0;     
-int fanStatus         = 0;     
-
-bool newVersionAvailable = false;
-bool cloudConnectedStatus = false;
-
-// ==================== 3. v3.7.0 UI (全浏览器自适应 + 密码可见眼睛 + 升级进度条) ====================
-const char index_html[] PROGMEM = R"rawliteral(
-
+rawliteral(
 <head>
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'>
@@ -836,13 +798,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     setTheme('auto');
     setInterval(updateData, 1500);
     updateData();
-  </script>
-</body>
-</html>
-)rawliteral";);
-
-// ==================== 4. 后台控制与硬件逻辑 (支持0档) ====================
-
+ 
 void updateControlLogic() {
   if (batteryLevel <= 3) {
     tecStatus = 0; pumpStatus = systemRunning ? 1 : 0; fanStatus = systemRunning ? 1 : 0;
@@ -985,3 +941,6 @@ void loop() {
   static unsigned long t = 0;
   if (millis() - t > 30000) { t = millis(); checkCloudOTA(); }
 }
+ </script>
+</body>
+</html>
