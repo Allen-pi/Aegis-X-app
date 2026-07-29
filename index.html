@@ -800,5 +800,175 @@
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis-X 控制台</title>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: #fff; text-align: center; margin: 0; padding: 20px; }
+    .card { background: #1e1e1e; padding: 20px; border-radius: 12px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    /* 圆环容器样式 */
+    .canvas-container { position: relative; width: 200px; height: 200px; margin: 20px auto; }
+    canvas { cursor: pointer; }
+    .temp-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; }
+    /* 按钮样式 */
+    .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 16px; margin: 10px 5px; cursor: pointer; }
+    .btn:active { background: #0056b3; }
+    .status { font-size: 14px; color: #888; margin-top: 10px; }
+  </style>
+</head>
+<body>
 
+  <div class="card">
+    <h2>Aegis-X 温度控制</h2>
+
+    <!-- 1. 恢复交互式温度圆环 -->
+    <div class="canvas-container">
+      <canvas id="tempDial" width="200" height="200"></canvas>
+      <div class="temp-display"><span id="targetTemp">25</span>°C</div>
+    </div>
+
+    <!-- 2. 开关与控制按钮 -->
+    <div>
+      <button class="btn" id="btnPower">开启系统</button>
+      <button class="btn" id="btnCool">快速制冷</button>
+    </div>
+
+    <!-- 3. 连接状态提示 -->
+    <div class="status" id="wsStatus">连接状态: 正在连接 ESP32...</div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. ESP32 WebSocket 通信链路打通
+    // ==========================================
+    // 如果直接在 ESP32 托管的网页打开，用 location.hostname；如果是 Github Pages，替换为 ESP32 的实际 IP
+    const espIp = window.location.hostname || "192.168.1.100"; 
+    const ws = new WebSocket(`ws://${espIp}:81/`);
+
+    const statusEl = document.getElementById('wsStatus');
+
+    ws.onopen = () => {
+      statusEl.innerText = "连接状态: 已成功连接 ESP32";
+      statusEl.style.color = "#00ff88";
+    };
+
+    ws.onclose = () => {
+      statusEl.innerText = "连接状态: 与 ESP32 断开连接";
+      statusEl.style.color = "#ff4444";
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket 错误: ", err);
+    };
+
+    // 接收 ESP32 返回的状态更新
+    ws.onmessage = (event) => {
+      console.log("来自 ESP32 的反馈: ", event.data);
+      try {
+        const data = JSON.parse(event.data);
+        if (data.currentTemp !== undefined) {
+          // 可在此处更新实时测量温度
+        }
+      } catch(e) {}
+    };
+
+    // 发送指令函数
+    function sendCommand(cmd, value) {
+      if (ws.readyState === WebSocket.OPEN) {
+        const payload = JSON.stringify({ command: cmd, val: value });
+        ws.send(payload);
+        console.log("已发送指令: ", payload);
+      } else {
+        alert("ESP32 未连接，无法发送指令！");
+      }
+    }
+
+    // ==========================================
+    // 2. 交互式圆环控件绘制与事件绑定
+    // ==========================================
+    const canvas = document.getElementById('tempDial');
+    const ctx = canvas.getContext('2d');
+    const tempDisplay = document.getElementById('targetTemp');
+
+    let currentVal = 25; // 默认目标温度
+    const minTemp = 16, maxTemp = 30; // 温度范围
+    let isDragging = false;
+
+    function drawDial(val) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 80;
+
+      // 绘制背景圆环
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0.75 * Math.PI, 2.25 * Math.PI);
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // 绘制进度圆环
+      const percent = (val - minTemp) / (maxTemp - minTemp);
+      const endAngle = (0.75 + percent * 1.5) * Math.PI;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0.75 * Math.PI, endAngle);
+      ctx.strokeStyle = '#007bff';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    function updateTempFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left - canvas.width/2;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top - canvas.height/2;
+
+      let angle = Math.atan2(y, x);
+      // 将角度归一化
+      let deg = angle * (180 / Math.PI) + 90;
+      if (deg < 0) deg += 360;
+
+      // 映射到温度范围
+      let target = Math.round(minTemp + (deg / 270) * (maxTemp - minTemp));
+      target = Math.max(minTemp, Math.min(maxTemp, target));
+
+      if (target !== currentVal) {
+        currentVal = target;
+        tempDisplay.innerText = currentVal;
+        drawDial(currentVal);
+        // 滑动停止或调节时发送指令给 ESP32
+        sendCommand("setTemp", currentVal);
+      }
+    }
+
+    // 事件绑定：支持鼠标与触摸屏拖拽
+    canvas.addEventListener('mousedown', (e) => { isDragging = true; updateTempFromEvent(e); });
+    window.addEventListener('mousemove', (e) => { if (isDragging) updateTempFromEvent(e); });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    canvas.addEventListener('touchstart', (e) => { isDragging = true; updateTempFromEvent(e); });
+    canvas.addEventListener('touchmove', (e) => { if (isDragging) updateTempFromEvent(e); });
+    canvas.addEventListener('touchend', () => { isDragging = false; });
+
+    // 初始化绘制圆环
+    drawDial(currentVal);
+
+    // ==========================================
+    // 3. 普通按钮事件绑定
+    // ==========================================
+    document.getElementById('btnPower').addEventListener('click', () => {
+      sendCommand("power", "toggle");
+    });
+
+    document.getElementById('btnCool').addEventListener('click', () => {
+      sendCommand("mode", "max_cool");
+    });
+  </script>
+</body>
+</html>
 
