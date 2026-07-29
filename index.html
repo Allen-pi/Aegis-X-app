@@ -1,10 +1,5 @@
-#include <WiFi.h>
-#include <WebServer.h>
-#include <DNSServer.h>
-#include <HTTPClient.h>
-#include <HTTPUpdate.h>
-#include <Preferences.h>
-
+<!DOCTYPE html>
+<html lang="zh-CN">
 // ==================== 1. 系统版本与 OTA 配置 (v3.7.0 优化版) ====================
 const String CURRENT_VERSION = "3.7.0";
 const char* OTA_CHECK_URL = "https://raw.githubusercontent.com/Allen-pi/Aegis-X-ota/refs/heads/main/version.json";
@@ -43,8 +38,7 @@ bool cloudConnectedStatus = false;
 
 // ==================== 3. v3.7.0 UI (全浏览器自适应 + 密码可见眼睛 + 升级进度条) ====================
 const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
-<html lang="zh-CN">
+
 <head>
   <meta charset='utf-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'>
@@ -845,7 +839,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   </script>
 </body>
 </html>
-)rawliteral";
+)rawliteral";);
 
 // ==================== 4. 后台控制与硬件逻辑 (支持0档) ====================
 
